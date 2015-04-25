@@ -1,34 +1,33 @@
 // dmapull.js
+/*jslint browser: true, devel: true, nomen: true, sloppy: true, stupid: true, white: true */
 
-console.log("dmapull.js loaded")
+console.log("dmapull.js loaded");
 
-var Q = []; // a global queue of intercepted mp3 urls
+//var Q = []; // a global queue of intercepted mp3 urls
 chrome.browserAction.disable();
 
 
-function createQhtml() {
-    var e = jQuery( document.createElement('div') );
-    for(var i=0; i<Q.length;i++) {
-        jQuery("<div><a href='"+Q[i]+"'>"+i+"</a><button>play</button><button>get</button></div>")
-            .appendTo(e);
-    }
-    return e.html();
-}
 
 function popopQ(mp3item, tab_id) {
-	Q.push(mp3item);
-	chrome.browserAction.enable(tab_id);
-	chrome.browserAction.setIcon({path: "favicon.ico", tabId: tab_id});
-	chrome.browserAction.setBadgeText({text: Q.length.toString(), tabId:tab_id});
-	chrome.browserAction.setTitle({title: Q.length.toString() + " tracks in queue", tabId:tab_id});
-	chrome.browserAction.setPopup({popup: createQhtml(), tabId:tab_id});
+	//Q.push(mp3item);
+    chrome.runtime.sendMessage({"msg":"newurl", "url":mp3item}, function(currentQ) {
+        console.log("got reply: %o", currentQ);
+        chrome.browserAction.enable(tab_id);
+        chrome.browserAction.setPopup({popup: "popup.html", tabId:tab_id});
+        chrome.browserAction.setIcon({path: "favicon.ico", tabId: tab_id});
+        if(currentQ === undefined) { return; }
+        chrome.browserAction.setBadgeText({text: currentQ.length.toString(), tabId:tab_id});
+        chrome.browserAction.setTitle({title: currentQ.length.toString() + " tracks in queue", tabId:tab_id});
+    });
 } 
+//chrome.webRequest.onCompleted.addListener(
 
-chrome.webRequest.onCompleted.addListener(
+chrome.webRequest.onBeforeRequest.addListener(
   function(info) {
-    //console.log("dma intercepted: %o", info);
+    console.log("dma intercepted: %o", info);
+    var cancel = {cancel: true};
 	if(info.url.indexOf("9876543210fedcba") != -1) {
-		// prevent infinite loop
+		// let this through
 		return {};
 	}
 	jQuery.get(info.url + "?9876543210fedcba", function(data) {
@@ -44,7 +43,7 @@ chrome.webRequest.onCompleted.addListener(
 		}
 
 	}, "text");
-	return {};
+	return cancel;
   },
   // filters
   {
@@ -56,6 +55,7 @@ chrome.webRequest.onCompleted.addListener(
 	  "xmlhttprequest"
 	]
   },
-  []
+  // opts
+  [ "blocking" ]
   
 );
