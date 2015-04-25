@@ -11,11 +11,11 @@
             "19": "favicon.png"           // optional
             //"38": "images/icon38.png"            // optional
           },
-          "default_title": "0"     // optional; shown in tooltip
-          //"default_popup": "popup.html"        // optional
+          "default_title": "0",     // optional; shown in tooltip
+          "default_popup": "popup.html"        // optional
         },
 	"permissions": [
-    "downloads",
+    "downloads", "downloads.open", "downloads.shelf",
 	"webRequest",
     "http://dma/index.do",
 	"http://madmasrv01/*"
