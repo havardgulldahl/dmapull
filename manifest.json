@@ -1,0 +1,16 @@
+{ "manifest_version": 2,
+
+  "name": "dmapull",
+  "description": "download dma playlist",
+  "version": "1.0",
+  "background": {
+    "scripts": ["jquery.min.js", "dmapull.js"]
+  },
+  "permissions": [
+    "downloads",
+	"webRequest",
+    "http://dma/index.do",
+	"http://madmasrv01/*"
+  ],
+  "content_security_policy": "script-src 'self' 'unsafe-eval' 'dma'; object-src 'self'"
+}
