@@ -4,7 +4,7 @@
   "description": "download dma playlist",
   "version": "1.0",
   "background": {
-    "scripts": ["jquery.min.js", "dmapull.js"]
+    "scripts": ["id3.js", "jquery.min.js", "dmapull.js"]
   },
 	"page_action": {
           "default_icon": {                    // optional
