@@ -4,20 +4,26 @@
 console.log("dmapull.js loaded");
 
 //var Q = []; // a global queue of intercepted mp3 urls
-chrome.browserAction.disable();
 
-
+var windowopened = false;
 
 function popopQ(mp3item, tab_id) {
 	//Q.push(mp3item);
+    if(windowopened) {
+        chrome.windows.create({url:"popup.html", tabId: tab_id, type: "popup", focused: false }, 
+            function(opened)  { windowopened = opened.id; }
+        );
+        
+    }
     chrome.runtime.sendMessage({"msg":"newurl", "url":mp3item}, function(currentQ) {
         console.log("got reply: %o", currentQ);
-        chrome.browserAction.enable(tab_id);
-        chrome.browserAction.setPopup({popup: "popup.html", tabId:tab_id});
-        chrome.browserAction.setIcon({path: "favicon.ico", tabId: tab_id});
+        chrome.pageAction.show(tab_id);
+        chrome.pageAction.setPopup({popup: "popup.html", tabId:tab_id});
+        chrome.pageAction.setIcon({path: "favicon.ico", tabId: tab_id});
         if(currentQ === undefined) { return; }
-        chrome.browserAction.setBadgeText({text: currentQ.length.toString(), tabId:tab_id});
-        chrome.browserAction.setTitle({title: currentQ.length.toString() + " tracks in queue", tabId:tab_id});
+        chrome.pageAction.setBadgeText({text: currentQ.length.toString(), tabId:tab_id});
+        chrome.pageAction.setTitle({title: currentQ.length.toString() + " tracks in queue", tabId:tab_id});
+
     });
 } 
 //chrome.webRequest.onCompleted.addListener(

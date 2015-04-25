@@ -6,7 +6,7 @@
   "background": {
     "scripts": ["jquery.min.js", "dmapull.js"]
   },
-	"browser_action": {
+	"page_action": {
           "default_icon": {                    // optional
             "19": "favicon.png"           // optional
             //"38": "images/icon38.png"            // optional
