@@ -6,8 +6,8 @@ var Q, playerstate;
 function createQhtml() {
     var e = jQuery("#list").empty();
     for(var i=0; i<Q.length;i++) { 
-        var t = Q[i].metadata.title || "Song #"+i;
-        jQuery("<li data-id="+i+">"+t+"<button data-cmd=play>play</button><button data-cmd=download>get</button></li>")
+        var t = Q[i].metadata.title || "Song #"+(i+1).toString();
+        jQuery("<div data-id="+i+"><button data-cmd=play>&#9654;</button><button data-cmd=download>&#8681;</button><span>"+t+"</span></div>")
             .appendTo(e);
     }
     e.on("click", function(ev) {
@@ -34,6 +34,8 @@ chrome.extension.onMessage.addListener(
         case "playerstate":
             playerstate = request.item;
             break;
+        case "current":
+            break;
       }
     }
 );
@@ -45,5 +47,15 @@ jQuery(document).ready(function() {
         console.log("got Q %o", response);
         Q = response;
         createQhtml();
+    });
+    jQuery("#next").on("click", function() { chrome.runtime.sendMessage({msg:"next"}); });
+    jQuery("#dlall").on("click", function() { chrome.runtime.sendMessage({msg:"downloadall"}); });
+    jQuery("#clear").on("click", function() { 
+        chrome.runtime.sendMessage({msg:"clear"},
+        function(response) {
+            console.log("got Q %o", response);
+            Q = response;
+            createQhtml();
+        }); 
     });
 });

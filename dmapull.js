@@ -32,6 +32,11 @@ var Q = {  // a global queue of intercepted mp3 urls
         chrome.runtime.sendMessage({"msg":"new", "item":md});
         return Q.length();
     },
+    clear : function() {
+        Q._q = [];
+        Q._niceq = [];
+        
+    },
     save : function() {
         return localStorage.setItem("dmapullQ", JSON.stringify(Q._q));
     },
@@ -52,18 +57,38 @@ var Q = {  // a global queue of intercepted mp3 urls
 Q.init(); // pull from persistant storage on startup
 
 var player = {
-    hardware: jQuery("<audio/>").attr({preload: "auto", autobuffer: true}),
+    hardware: jQuery("<audio/>").attr({preload: "auto", autobuffer: true})
+        .on("ended", function(ev) { player.next(); }),
     play : function(url) {
         console.log("hardware %o: ", url);
         if(url !== undefined) {
             player.hardware.attr({"src": url});
         }
         player.hardware.trigger("play");
+        chrome.notifications.create("dmapullnotification", {type: "basic",
+              title: "Playing song",
+              message: "Currently "+url, // TODO: use id3 tags
+              iconUrl: "wave.png",
+              buttons: [ {title: "Next"}, {title: "Stop"} ]
+        });
+        chrome.notifications.onButtonClicked.addListener(function(clickid, buttonid) {
+            if(buttonid === 0) { // next
+                player.next();
+            } else if(buttonid === 1) { // stop
+                player.pause();
+            }
+        });
         chrome.runtime.sendMessage({"msg":"playerstate", "item":"playing"});
     },
     pause : function() {
         player.hardware.trigger("pause");
         chrome.runtime.sendMessage({"msg":"playerstate", "item":"paused"});
+    },
+    next : function() {
+        var current = Q.toArray().indexOf(player.hardware.attr("src"));
+        if(current > -1 && current+1 <= Q.toArray().length) {
+            player.play(Q.get(current+1));
+        }
     },
     status : function() {
         var status, a = player.hardware[0];
@@ -90,6 +115,12 @@ chrome.extension.onMessage.addListener(
             case "playerstate":
                 sendResponse(player.status());
                 break;
+            case "clear":
+                player.pause();
+                Q.clear();
+                sendResponse(Q.toNiceArray());
+                break;
+
             case "metadata":
                 sendResponse(metadata(request.item));
                 break;
@@ -99,8 +130,17 @@ chrome.extension.onMessage.addListener(
             case "pause":
                 player.pause();
                 break;
+            case "next":
+                player.next();
+                break;
             case "download":
                 chrome.downloads.download({url:request.item});
+                break;
+            case "downloadall":
+                var rawQ = Q.toArray();
+                for(var i=0;i<rawQ.length;i++) {
+                    chrome.downloads.download({url:rawQ[i]});
+                }
                 break;
 
           
@@ -110,8 +150,7 @@ chrome.extension.onMessage.addListener(
 
 function popopQ(mp3item, tab_id) {
 	Q.add(mp3item);
-    console.log("play %o already (%o)", mp3item, player.status());
-    if(["paused", "stopped"].indexOf(player.status()) > -1) {  player.play(mp3item); }
+    if(["paused", "stopped"].indexOf(player.status()) > -1) {  player.play(mp3item); } // start playing first song added, if currently silent
     chrome.pageAction.show(tab_id);
     chrome.pageAction.setPopup({popup: "popup.html", tabId:tab_id});
     chrome.pageAction.setIcon({path: "favicon.ico", tabId: tab_id});
@@ -136,7 +175,7 @@ chrome.webRequest.onBeforeRequest.addListener(
 			// matched text: match[0]
 			// match start: match.index
 			// capturing group n: match[n]
-			console.log("found %o", match[1]);
+			//console.log("found %o", match[1]);
 			popopQ(match[1], info.tabId);
 		}
 

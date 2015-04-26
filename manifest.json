@@ -17,6 +17,7 @@
 	"permissions": [
     "downloads", "downloads.open", "downloads.shelf",
 	"webRequest", "webRequestBlocking", 
+    "notifications", 
     "http://dma/index.do",
 	"http://madmasrv01/*"
   ],

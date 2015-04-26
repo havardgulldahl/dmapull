@@ -1,9 +1,24 @@
 <html>
-<head><script src=jQuery.min.js></script><script src=popup.js></script></head>
+<head>
+<script src=jQuery.min.js></script><script src=popup.js></script>
+<style>
+html {font-size: small; min-width: 12em;}
+#list button  { margin: 1px }
+#clear { float: right; }
+#head { margin-bottom: 8px; }
+#currentsong { font-weight: 900; }
+</style>
+</head>
 <body>
-<h1 id=title>title</h1>
-<ul id=list>
-<li>empty list</li>
-</ul>
+<div class=container>
+  <section id=head>
+    <button id=next>&#9654;&#9654;</button>
+    <button id=dlall>&#8681;&#8681;</button>
+    <button id=clear>&#10006;</button>
+  </section>
+  <section id=list>
+      <div>Empty list</div>
+  </section>
+</div>
 </body>
 </html>
