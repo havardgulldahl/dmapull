@@ -3,20 +3,32 @@
 
 console.log("dmapull.js loaded");
 
-function metadata(mp3url) { // get id3 data via id3.js
+function metadata(mp3url, callback) { // get id3 data via jsmediatags.js
+    console.log('getting metadata for *%s*', mp3url);
     var tok = mp3url + "_id3";
     var incache = localStorage.getItem(tok) || false;
-    if(incache) {return incache; }
-    return {}; // bypass until IIS Range bug is fixed
-    
-    ID3.loadTags(mp3url, function() {
-        var tags = ID3.getAllTags(mp3url);
-        console.log(tags);
-        localStorage.setItem(tok, tags);
-        return tags;
+    if(incache) {return JSON.parse(incache); }
+
+    var ret = {};
+    var r = new jsmediatags.Reader(mp3url)
+      .setTagsToRead(['title', 'artist'])
+      .read({
+        onSuccess: function(tag) {
+          var medatata = {'artist':tag.tags.artist, 'title':tag.tags.title};
+          console.log('read id3 tags: %o', medatata);
+          localStorage.setItem(tok, JSON.stringify(medatata));
+          if(callback !== undefined) {
+              callback(medatata);
+          }
+
+        },
+        onError: function(error) {
+          console.log(error);
+
+        }
     });
-    return {};
-}    
+    return ret;
+}
 
 
 var Q = {  // a global queue of intercepted mp3 urls
@@ -27,15 +39,17 @@ var Q = {  // a global queue of intercepted mp3 urls
     },
     add : function(url) {
         Q._q.push(url);
-        var md = {"url":url, "metadata": metadata(url)};
-        Q._niceq.push(md);
-        chrome.runtime.sendMessage({"msg":"new", "item":md});
+        metadata(url, function(_md) { //callback
+          var md = {"url":url, "metadata": _md};
+          Q._niceq.push(md);
+          chrome.runtime.sendMessage({"msg":"new", "item":md});
+        });
         return Q.length();
     },
     clear : function() {
         Q._q = [];
         Q._niceq = [];
-        
+
     },
     save : function() {
         return localStorage.setItem("dmapullQ", JSON.stringify(Q._q));
@@ -60,14 +74,17 @@ var player = {
     hardware: jQuery("<audio/>").attr({preload: "auto", autobuffer: true})
         .on("ended", function(ev) { player.next(); }),
     play : function(url) {
-        console.log("hardware %o: ", url);
-        if(url !== undefined) {
-            player.hardware.attr({"src": url});
+        console.log("hardware pipe %o: ", url);
+        if(url === undefined) {
+            // invalid url
+            return false;
         }
+        var md = metadata(url);
+        player.hardware.attr({"src": url});
         player.hardware.trigger("play");
         chrome.notifications.create("dmapullnotification", {type: "basic",
               title: "Playing song",
-              message: "Currently "+url, // TODO: use id3 tags
+              message: "Currently '"+md.title+"', \nby "+md.artist,
               iconUrl: "wave.png",
               buttons: [ {title: "Next"}, {title: "Stop"} ]
         });
@@ -98,11 +115,11 @@ var player = {
         else  { status = "loading"; }
         chrome.runtime.sendMessage({"msg":"playerstate", "item":status});
         return status;
-    }    
-}
+    }
+};
 
 
-    
+
 chrome.extension.onMessage.addListener(
     function(request, sender, sendResponse) {
       switch(request.msg) {
@@ -134,16 +151,23 @@ chrome.extension.onMessage.addListener(
                 player.next();
                 break;
             case "download":
-                chrome.downloads.download({url:request.item});
+                var md = metadata(request.item);
+                var ext = request.item.split('.').pop()
+                var fname = md.title.replace(/[^a-z0-9_\-]/gi, '_').toLowerCase() + '.' + ext;
+                chrome.downloads.download({url:request.item, filename:fname});
                 break;
             case "downloadall":
                 var rawQ = Q.toArray();
+                var md, fname, ext;
                 for(var i=0;i<rawQ.length;i++) {
-                    chrome.downloads.download({url:rawQ[i]});
+                    md = metadata(rawQ[i]);
+                    ext = rawQ[i].split('.').pop()
+                    fname = md.title.replace(/[^a-z0-9_\-]/gi, '_').toLowerCase() + '.' + ext;
+                    chrome.downloads.download({url:rawQ[i], filename:fname});
                 }
                 break;
 
-          
+
       }
 });
 
@@ -156,7 +180,7 @@ function popopQ(mp3item, tab_id) {
     chrome.pageAction.setIcon({path: "favicon.ico", tabId: tab_id});
     chrome.pageAction.setTitle({title: Q.length().toString() + " tracks in queue", tabId:tab_id});
 
-} 
+}
 //chrome.webRequest.onCompleted.addListener(
 
 chrome.webRequest.onBeforeRequest.addListener(
@@ -186,7 +210,7 @@ chrome.webRequest.onBeforeRequest.addListener(
   {
     urls: [
       "http://dma/playerInformation.do*"
-    ], 
+    ],
 	types: [
     // type modifier
 	  "xmlhttprequest"
@@ -194,5 +218,5 @@ chrome.webRequest.onBeforeRequest.addListener(
   },
   // opts
   [ "blocking" ]
-  
+
 );
