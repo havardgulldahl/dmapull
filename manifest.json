@@ -4,22 +4,22 @@
   "description": "download dma playlist",
   "version": "1.0",
   "background": {
-    "scripts": ["id3.js", "jquery.min.js", "dmapull.js"]
+    "scripts": ["jsmediatags.min.js", "jquery.min.js", "dmapull.js"]
   },
 	"page_action": {
           "default_icon": {                    // optional
             "19": "favicon.png"           // optional
             //"38": "images/icon38.png"            // optional
-          }                                                                
+          }
           //"default_title": "0",     // optional; shown in tooltip
           //"default_popup": "popup.html"        // optional
         },
 	"permissions": [
     "downloads", "downloads.open", "downloads.shelf",
-	"webRequest", "webRequestBlocking", 
-    "notifications", 
+	  "webRequest", "webRequestBlocking",
+    "notifications",
     "http://dma/index.do",
-	"http://madmasrv01/*"
+	  "http://madmasrv01/*", "http://madmasrv02/*"
   ],
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
 }
