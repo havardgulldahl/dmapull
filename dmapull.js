@@ -153,7 +153,12 @@ chrome.extension.onMessage.addListener(
             case "download":
                 var md = metadata(request.item);
                 var ext = request.item.split('.').pop()
-                var fname = md.title.replace(/[^a-z0-9_\-]/gi, '_').toLowerCase() + '.' + ext;
+                //remove crazy chars from filename
+                try {
+                    fname = md.title.replace(/[^a-z0-9_\-]/gi, '_').toLowerCase() + '.' + ext;
+                } catch(e) {
+                    fname = rawQ[i].split('/').pop(); // just take the filename
+                }
                 chrome.downloads.download({url:request.item, filename:fname});
                 break;
             case "downloadall":
@@ -161,8 +166,13 @@ chrome.extension.onMessage.addListener(
                 var md, fname, ext;
                 for(var i=0;i<rawQ.length;i++) {
                     md = metadata(rawQ[i]);
-                    ext = rawQ[i].split('.').pop()
-                    fname = md.title.replace(/[^a-z0-9_\-]/gi, '_').toLowerCase() + '.' + ext;
+                    ext = rawQ[i].split('.').pop(); 
+                    //remove crazy chars from filename
+                    try {
+                        fname = md.title.replace(/[^a-z0-9_\-]/gi, '_').toLowerCase() + '.' + ext;
+                    } catch(e) {
+                        fname = rawQ[i].split('/').pop(); // just take the filename
+                    }
                     chrome.downloads.download({url:rawQ[i], filename:fname});
                 }
                 break;
